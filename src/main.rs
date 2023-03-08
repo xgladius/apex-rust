@@ -6,11 +6,6 @@ use std::str;
 
 use skidscan::{signature};
 
-fn read_mem(handle: ProcessHandle, address: usize, size: usize) -> io::Result<Vec<u8>> {
-    let _bytes = copy_address(address, size, &handle)?;
-    Ok(_bytes)
-}
-
 fn read<T : Copy>(handle: ProcessHandle, address: usize) -> std::io::Result<T> {
     let ret: std::io::Result<T>;
     let member: DataMember<T> = DataMember::new_offset(handle, vec![address]);
@@ -60,7 +55,7 @@ fn main() {
     println!("Found text section: {:#?}", text_sec);
 
     let text_base = base + (text_sec.VirtualAddress as usize);
-    let loaded_text_sec = read_mem(handle, text_base, text_sec.VirtualSize as usize).unwrap();
+    let loaded_text_sec = copy_address(text_base, text_sec.VirtualSize as usize, &handle).unwrap();
 
     println!("Loaded .text into our memory. Size: 0x{:X}", loaded_text_sec.len());
 
