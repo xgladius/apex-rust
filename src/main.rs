@@ -1,5 +1,4 @@
-use std::io;
-use process_memory::{Pid, TryIntoProcessHandle, copy_address, Memory, DataMember, ProcessHandleExt, Architecture, ProcessHandle};
+use process_memory::{TryIntoProcessHandle, copy_address, Memory, DataMember, ProcessHandleExt, Architecture, ProcessHandle};
 use sysinfo::{ProcessExt, System, SystemExt, Process, PidExt};
 use pelite::{pe64::{Pe, PeFile}};
 use std::str;
