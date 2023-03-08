@@ -6,8 +6,7 @@ use std::str;
 
 use skidscan::{signature};
 
-fn read_mem(pid: Pid, address: usize, size: usize) -> io::Result<Vec<u8>> {
-    let handle = pid.try_into_process_handle().unwrap();
+fn read_mem(handle: ProcessHandle, address: usize, size: usize) -> io::Result<Vec<u8>> {
     let _bytes = copy_address(address, size, &handle)?;
     Ok(_bytes)
 }
@@ -61,26 +60,37 @@ fn main() {
     println!("Found text section: {:#?}", text_sec);
 
     let text_base = base + (text_sec.VirtualAddress as usize);
-    let loaded_text_sec = read_mem(pid, text_base, text_sec.VirtualSize as usize).unwrap();
+    let loaded_text_sec = read_mem(handle, text_base, text_sec.VirtualSize as usize).unwrap();
 
     println!("Loaded .text into our memory. Size: 0x{:X}", loaded_text_sec.len());
+
+    let local_player = read::<usize>(handle, text_base + 0x01ee8cb0 + 0x8).unwrap();
+    let local_team = read::<u32>(handle, local_player + 0x044c).unwrap();
 
     let client_entity_list_sig = signature!("4C 8B 15 ? ? ? ? 33 F6");
     let client_entity_list_adr = client_entity_list_sig.scan(loaded_text_sec.as_slice()).unwrap_or(0);
     
-    if client_entity_list_adr > 0 {
+    while client_entity_list_adr > 0 {
         let client_entity_list = resolve_relative(handle, client_entity_list_adr + text_base, 3, 7) + 0x8;
-        println!("Found IClientEntityList: 0x{:X}", client_entity_list);
-        
+        //println!("Found IClientEntityList: 0x{:X}", client_entity_list);
+
         for i in 0..70 {
             let entity = get_entity(handle, client_entity_list, i);
             if entity > 0 {
-                println!("Entity: 0x{:X}", entity);
                 let health = read::<u32>(handle, entity + 0x043C).unwrap();
-                println!("Health: {}", health);
+                let team = read::<u32>(handle, entity + 0x044c).unwrap();
 
-                write::<f32>(handle, entity + 0x3B4, 99999999.0f32);
-                write::<f32>(handle, entity + 0x1D0, 255.0f32);
+                //println!("Entity: 0x{:X} Health: {} Team: {}", entity, health, team);
+
+                if team != local_team {        
+                    write::<i32>(handle, entity + 0x2C4, 1512990053);
+                    write::<i32>(handle, entity + 0x3C8, 1);
+                    write::<i32>(handle, entity + 0x3D0, 1);
+                    write::<f32>(handle, entity + 0x3B4, 99999999.0f32);
+                    write::<f32>(handle, entity + 0x1D0, 255.0f32);
+                } else {
+                    write::<f32>(handle, entity + 0x1D4, 255.0f32);
+                }
             }
         }
     }
