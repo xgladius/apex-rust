@@ -1,9 +1,12 @@
-use process_memory::{TryIntoProcessHandle, copy_address, Memory, DataMember, ProcessHandleExt, Architecture, ProcessHandle};
-use sysinfo::{ProcessExt, System, SystemExt, Process, PidExt};
-use pelite::{pe64::{Pe, PeFile}};
+use pelite::pe64::{Pe, PeFile};
+use process_memory::{
+    copy_address, Architecture, DataMember, Memory, ProcessHandle, ProcessHandleExt,
+    TryIntoProcessHandle,
+};
 use std::str;
+use sysinfo::{PidExt, Process, ProcessExt, System, SystemExt};
 
-use skidscan::{signature};
+use skidscan::signature;
 
 fn read<T: Copy>(handle: ProcessHandle, address: usize) -> std::io::Result<T> {
     unsafe { DataMember::<T>::new_offset(handle, vec![address]).read() }
@@ -75,7 +78,7 @@ fn main() -> std::io::Result<()> {
     let client_entity_list_adr = client_entity_list_sig
         .scan(loaded_text_sec.as_slice())
         .unwrap_or(0);
-    
+
     while client_entity_list_adr > 0 {
         let client_entity_list =
             resolve_relative(handle, client_entity_list_adr + text_base, 3, 7)? + 0x8;
